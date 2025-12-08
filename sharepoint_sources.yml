@@ -1,0 +1,11 @@
+# Global settings (shared for all sources)
+site_hostname: bavatools.sharepoint.com
+table_name: Table1
+
+# Each "source" becomes /data/<name>/<name>.(parquet|csv)
+sources:
+  - name: sold_to_clients
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Отгрузки клиентам_raw
+    recursive: false
