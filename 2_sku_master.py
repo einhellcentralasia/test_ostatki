@@ -25,7 +25,7 @@ SITE_PATH     = os.getenv("SKU_SITE_PATH", "/sites/Einhell_common")
 FILE_PATH     = os.getenv("SKU_XLSX_PATH", "/Shared Documents/General/_system_files/Bava_data.xlsx")
 TABLE_NAME    = os.getenv("SKU_TABLE_NAME", "list_stock_final_table_transit_table")
 
-OUTPUT_NAME   = os.getenv("SKU_OUTPUT_NAME", "SKU")  # folder + filename under /data/<OUTPUT_NAME>/
+OUTPUT_NAME   = os.getenv("SKU_OUTPUT_NAME", "SKU")  # /data/<OUTPUT_NAME>/<OUTPUT_NAME>.(parquet|csv|json)
 KEEP_COLUMNS  = ["SKU", "Model", "RSP", "ETA_Almaty"]
 
 
@@ -179,7 +179,7 @@ def try_get_item_id_by_path(ctx: GraphCtx, drive_id: str, path: str) -> Optional
 
 
 # -------------------------
-# Excel table extraction (named table, full columns)
+# Excel table extraction (named table)
 # -------------------------
 
 def iter_ws_tables(ws):
@@ -203,8 +203,7 @@ def extract_table_df(ws, ref: str) -> pd.DataFrame:
         return pd.DataFrame()
     headers = [("" if x is None else str(x).strip()) for x in rows[0]]
     data = rows[1:]
-    df = pd.DataFrame(data, columns=headers)
-    return df
+    return pd.DataFrame(data, columns=headers)
 
 def read_named_table_from_xlsx_bytes(xlsx_bytes: bytes, table_name: str) -> Tuple[pd.DataFrame, str]:
     wb = load_workbook(filename=io.BytesIO(xlsx_bytes), data_only=True, read_only=False)
@@ -254,7 +253,7 @@ def select_columns_case_insensitive(df: pd.DataFrame, wanted: List[str]) -> pd.D
         )
 
     out = df[[picked[w] for w in wanted]].copy()
-    out.columns = wanted  # normalize exact names
+    out.columns = wanted
     return out
 
 def coerce_eta_date(df: pd.DataFrame) -> pd.DataFrame:
@@ -266,10 +265,8 @@ def save_outputs(df: pd.DataFrame, name: str) -> None:
     out_dir = os.path.join("data", name)
     ensure_dir(out_dir)
 
-    # Parquet keeps date types nicely
     df.to_parquet(os.path.join(out_dir, f"{name}.parquet"), index=False)
 
-    # CSV: keep dd.mm.yyyy formatting
     df.to_csv(
         os.path.join(out_dir, f"{name}.csv"),
         index=False,
@@ -277,7 +274,6 @@ def save_outputs(df: pd.DataFrame, name: str) -> None:
         date_format="%d.%m.%Y",
     )
 
-    # JSON for quick eyeballing
     with open(os.path.join(out_dir, f"{name}.json"), "w", encoding="utf-8") as f:
         json.dump(df.to_dict(orient="records"), f, ensure_ascii=False, indent=2)
 
@@ -310,18 +306,14 @@ def main() -> None:
         die(f"File not found at path: {FILE_PATH}")
 
     xlsx_bytes = request_bytes(ctx, f"{GRAPH}/drives/{drive_id}/items/{item_id}/content")
-    df_raw, reason = read_named_table_from_xlsx_bytes(xlsx_bytes, TABLE_NAME)
+    df_raw, _ = read_named_table_from_xlsx_bytes(xlsx_bytes, TABLE_NAME)
 
     if df_raw.empty:
-        die(f"Table '{TABLE_NAME}' extracted but is empty. (Reason: {reason})")
+        die(f"Table '{TABLE_NAME}' extracted but is empty.")
 
-    # Keep only needed columns
     df = select_columns_case_insensitive(df_raw, KEEP_COLUMNS)
-
-    # Parse ETA_Almaty
     df = coerce_eta_date(df)
 
-    # Light cleanup: strip SKU + Model
     df["SKU"] = df["SKU"].astype(str).str.strip()
     df["Model"] = df["Model"].astype(str).str.strip()
 
@@ -329,7 +321,7 @@ def main() -> None:
 
     total_s = round(time.perf_counter() - t0, 2)
     print(f"✅ Done. Rows={len(df)} | Runtime={total_s}s")
-    print("📁 Outputs: /data/{}/{}.parquet|csv|json".format(OUTPUT_NAME, OUTPUT_NAME))
+    print(f"📁 Outputs: /data/{OUTPUT_NAME}/{OUTPUT_NAME}.parquet|csv|json")
 
 if __name__ == "__main__":
     main()
