@@ -1,45 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-Read-only SharePoint folder sync:
-- Lists all .xlsx files in a SharePoint folder (optionally recursive)
-- For each file, loads Excel Table (SP_TABLE_NAME, default "Table1") fully in memory
-- Extracts only SKU and Qty columns (robust header matching)
-- Aggregates Qty by SKU across all files
-- Saves outputs to repo ./data/:
-    - sold_to_clients.parquet
-    - sold_to_clients.csv
-    - sold_to_clients.json
-- Prints runtime + processing stats
-
-Safety (poka-yoke):
-- NO write calls to SharePoint (only GET)
-- Skips temp files like "~$..."
-- Handles Graph pagination + throttling retries
-- Robust path resolution (auto-strips "Shared Documents/" prefix + URL encodes Cyrillic/commas)
-- If Table metadata isn't visible, fallback scans for headers SKU+Qty
-- Never crashes if nothing parsed: still writes empty outputs with correct schema
-"""
-
 from __future__ import annotations
 
 import io
-import json
 import os
 import sys
 import time
+import json
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 import requests
+import yaml
 from openpyxl import load_workbook
 from urllib.parse import quote
 
 
 # -------------------------
-# Error handling at the top
+# Poka-yoke / error handling
 # -------------------------
 
 def die(msg: str, code: int = 2) -> None:
@@ -54,6 +34,9 @@ def env(name: str, default: Optional[str] = None, required: bool = True) -> str:
 
 def now_ts() -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S")
+
+def ensure_dir(path: str) -> None:
+    os.makedirs(path, exist_ok=True)
 
 
 # -------------------------
@@ -86,7 +69,7 @@ def request_raw(ctx: GraphCtx, method: str, url: str, *, params=None, timeout: i
                 sleep_s = float(retry_after) if retry_after else backoff
             except ValueError:
                 sleep_s = backoff
-            print(f"⚠️ {now_ts()} Graph {resp.status_code} on {url} (attempt {attempt}/{max_tries}), sleep {sleep_s:.1f}s")
+            print(f"⚠️ {now_ts()} Graph {resp.status_code} (attempt {attempt}/{max_tries}), sleep {sleep_s:.1f}s")
             time.sleep(sleep_s)
             backoff = min(backoff * 1.8, 20.0)
             continue
@@ -99,8 +82,7 @@ def request_raw(ctx: GraphCtx, method: str, url: str, *, params=None, timeout: i
 def request_json_ok(ctx: GraphCtx, method: str, url: str, *, params=None, expected=(200,)) -> dict:
     resp = request_raw(ctx, method, url, params=params, timeout=60)
     if resp.status_code not in expected:
-        body = resp.text[:2000]
-        die(f"Graph error {resp.status_code} on {url}\nResponse: {body}")
+        die(f"Graph error {resp.status_code} on {url}\nResponse: {resp.text[:2000]}")
     return resp.json()
 
 def request_bytes(ctx: GraphCtx, url: str) -> bytes:
@@ -140,18 +122,28 @@ def get_app_token(tenant_id: str, client_id: str, client_secret: str) -> str:
     resp = requests.post(token_url, data=data, timeout=60)
     if resp.status_code != 200:
         die(f"Token request failed {resp.status_code}: {resp.text[:2000]}")
-    js = resp.json()
-    tok = js.get("access_token")
+    tok = resp.json().get("access_token")
     if not tok:
         die("Token response missing access_token")
     return tok
+
+def normalize_sp_path(p: str) -> str:
+    p2 = p.strip().replace("\\", "/").lstrip("/")
+    while "//" in p2:
+        p2 = p2.replace("//", "/")
+    low = p2.lower()
+    for prefix in ("shared documents/", "documents/"):
+        if low.startswith(prefix):
+            p2 = p2[len(prefix):]
+            break
+    return p2
 
 def graph_get_site_id(ctx: GraphCtx, hostname: str, site_path: str) -> str:
     url = f"{GRAPH}/sites/{hostname}:{site_path}"
     js = request_json_ok(ctx, "GET", url, expected=(200,))
     site_id = js.get("id")
     if not site_id:
-        die("Could not resolve site id (missing id). Check SP_SITE_HOSTNAME/SP_SITE_PATH.")
+        die("Could not resolve site id. Check site_hostname/site_path in YAML.")
     return site_id
 
 def graph_get_drive_id(ctx: GraphCtx, site_id: str) -> str:
@@ -161,18 +153,6 @@ def graph_get_drive_id(ctx: GraphCtx, site_id: str) -> str:
     if not drive_id:
         die("Could not resolve drive id for the site.")
     return drive_id
-
-def normalize_sp_path(p: str) -> str:
-    p2 = p.strip().replace("\\", "/").lstrip("/")
-    while "//" in p2:
-        p2 = p2.replace("//", "/")
-
-    low = p2.lower()
-    for prefix in ("shared documents/", "documents/"):
-        if low.startswith(prefix):
-            p2 = p2[len(prefix):]
-            break
-    return p2
 
 def try_get_item_id_by_path(ctx: GraphCtx, drive_id: str, path: str) -> Optional[str]:
     path_clean = normalize_sp_path(path)
@@ -186,12 +166,6 @@ def try_get_item_id_by_path(ctx: GraphCtx, drive_id: str, path: str) -> Optional
     die(f"Unexpected status {resp.status_code} resolving folder path.\nURL: {url}\nBody: {resp.text[:2000]}")
     return None
 
-def graph_list_root_children_names(ctx: GraphCtx, drive_id: str, limit: int = 60) -> List[str]:
-    url = f"{GRAPH}/drives/{drive_id}/root/children"
-    params = {"$top": str(limit)}
-    js = request_json_ok(ctx, "GET", url, params=params, expected=(200,))
-    return [it.get("name", "") for it in js.get("value", [])]
-
 def graph_list_children(ctx: GraphCtx, drive_id: str, folder_item_id: str) -> Iterable[dict]:
     url = f"{GRAPH}/drives/{drive_id}/items/{folder_item_id}/children"
     params = {"$top": "200"}
@@ -199,10 +173,10 @@ def graph_list_children(ctx: GraphCtx, drive_id: str, folder_item_id: str) -> It
         js = request_json_ok(ctx, "GET", url, params=params, expected=(200,))
         for it in js.get("value", []):
             yield it
-        next_link = js.get("@odata.nextLink")
-        if not next_link:
+        nxt = js.get("@odata.nextLink")
+        if not nxt:
             break
-        url = next_link
+        url = nxt
         params = None
 
 def graph_walk_files(ctx: GraphCtx, drive_id: str, folder_item_id: str, recursive: bool) -> List[dict]:
@@ -214,23 +188,21 @@ def graph_walk_files(ctx: GraphCtx, drive_id: str, folder_item_id: str, recursiv
             name = it.get("name", "")
             if name.startswith("~$"):
                 continue
-
             is_folder = "folder" in it
             is_file = "file" in it
 
             if is_folder and recursive:
-                child_id = it.get("id")
-                if child_id:
-                    stack.append(child_id)
+                cid = it.get("id")
+                if cid:
+                    stack.append(cid)
                 continue
-
             if is_file:
                 out.append(it)
     return out
 
 
 # -------------------------
-# Excel parsing helpers
+# Excel parsing helpers (SKU+Qty only)
 # -------------------------
 
 def norm(s: str) -> str:
@@ -255,18 +227,16 @@ def iter_ws_tables(ws):
     if not t:
         return
     try:
-        # TableList behaves like a dict
         for name in list(t.keys()):
             yield name, t[name]
     except Exception:
-        # Fallback: assume iterable of table objects
         try:
             for tbl in t:
                 yield getattr(tbl, "name", None), tbl
         except Exception:
             return
 
-def extract_df_from_range(ws, ref: str) -> pd.DataFrame:
+def extract_df_from_range(ws, ref: str) -> Optional[pd.DataFrame]:
     cells = ws[ref]
     rows = [[c.value for c in row] for row in cells]
     if not rows or len(rows) < 2:
@@ -274,7 +244,7 @@ def extract_df_from_range(ws, ref: str) -> pd.DataFrame:
     headers = [str(x) if x is not None else "" for x in rows[0]]
     sku_idx, qty_idx = find_col_indices(headers)
     if sku_idx is None or qty_idx is None:
-        return pd.DataFrame()  # signal "bad headers"
+        return None
     skus, qtys = [], []
     for r in rows[1:]:
         if sku_idx >= len(r) or qty_idx >= len(r):
@@ -292,7 +262,6 @@ def extract_df_from_range(ws, ref: str) -> pd.DataFrame:
     return pd.DataFrame({"SKU": skus, "Qty": qtys})
 
 def fallback_scan_headers(ws, max_rows: int = 5000, max_cols: int = 80) -> Optional[pd.DataFrame]:
-    # Find header row containing SKU and Qty (anywhere), then read down until blank block.
     mr = min(ws.max_row or 0, max_rows)
     mc = min(ws.max_column or 0, max_cols)
     if mr <= 0 or mc <= 0:
@@ -303,11 +272,11 @@ def fallback_scan_headers(ws, max_rows: int = 5000, max_cols: int = 80) -> Optio
     qty_col = None
 
     for r in range(1, mr + 1):
-        values = []
+        vals = []
         for c in range(1, mc + 1):
             v = ws.cell(row=r, column=c).value
-            values.append("" if v is None else str(v))
-        sku_idx, qty_idx = find_col_indices(values)
+            vals.append("" if v is None else str(v))
+        sku_idx, qty_idx = find_col_indices(vals)
         if sku_idx is not None and qty_idx is not None:
             header_row = r
             sku_col = sku_idx + 1
@@ -322,7 +291,6 @@ def fallback_scan_headers(ws, max_rows: int = 5000, max_cols: int = 80) -> Optio
     for r in range(header_row + 1, mr + 1):
         sku = ws.cell(row=r, column=sku_col).value
         qty = ws.cell(row=r, column=qty_col).value
-
         is_blank = (sku is None or str(sku).strip() == "") and (qty is None or str(qty).strip() == "")
         if is_blank:
             blank_streak += 1
@@ -330,191 +298,228 @@ def fallback_scan_headers(ws, max_rows: int = 5000, max_cols: int = 80) -> Optio
                 break
             continue
         blank_streak = 0
-
         if sku is None or str(sku).strip() == "":
             continue
         try:
             q = float(qty) if qty is not None and str(qty).strip() != "" else 0.0
         except Exception:
             q = 0.0
-
         skus.append(str(sku).strip())
         qtys.append(q)
 
     return pd.DataFrame({"SKU": skus, "Qty": qtys})
 
-def read_sku_qty_from_xlsx_bytes(xlsx_bytes: bytes, table_name: str, debug_tables: bool = False) -> Tuple[Optional[pd.DataFrame], str]:
-    """
-    Returns (df, reason).
-    df=None means hard failure.
-    df empty with columns means ok but no rows.
-    reason used for logs.
-    """
-    # IMPORTANT FIX: read_only=False so table metadata is available reliably
+def read_sku_qty_from_xlsx_bytes(xlsx_bytes: bytes, table_name: str) -> Tuple[Optional[pd.DataFrame], str]:
     wb = load_workbook(filename=io.BytesIO(xlsx_bytes), data_only=True, read_only=False)
-
-    # 1) Try real Excel table by name (case-insensitive)
     target = table_name.strip().lower()
-    for ws in wb.worksheets:
-        found = []
-        for tname, tbl in iter_ws_tables(ws) or []:
-            if tname:
-                found.append(tname)
-        if debug_tables and found:
-            print(f"   🧩 Sheet '{ws.title}' tables: {found}")
 
+    for ws in wb.worksheets:
         for tname, tbl in iter_ws_tables(ws) or []:
-            if not tname:
-                continue
-            if tname.strip().lower() == target:
+            if tname and tname.strip().lower() == target:
                 ref = getattr(tbl, "ref", None)
                 if not ref:
                     return None, "Table found but missing ref"
                 df = extract_df_from_range(ws, ref)
-                if df.empty and list(df.columns) != ["SKU", "Qty"]:
-                    # headers mismatch
-                    break
+                if df is None:
+                    return None, "Table found but SKU/Qty headers not detected"
                 return df, "OK(table)"
 
-    # 2) Fallback scan headers (handles weird table metadata)
     for ws in wb.worksheets:
         df2 = fallback_scan_headers(ws)
         if df2 is not None:
-            return df2, "OK(fallback-scan)"
+            return df2, "OK(fallback)"
 
     return None, "Table not found + fallback scan failed"
 
 
 # -------------------------
-# Main
+# Config + pipeline
 # -------------------------
 
-def main() -> None:
+def load_config(path: str) -> dict:
+    if not os.path.exists(path):
+        die(f"Config file not found: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        die("Config must be a YAML mapping (dict).")
+    return cfg
+
+def validate_config(cfg: dict) -> None:
+    if not cfg.get("site_hostname"):
+        die("Config missing 'site_hostname'")
+    if not cfg.get("table_name"):
+        die("Config missing 'table_name'")
+    sources = cfg.get("sources")
+    if not isinstance(sources, list) or not sources:
+        die("Config missing 'sources' list or it's empty")
+
+    seen = set()
+    for s in sources:
+        if not isinstance(s, dict):
+            die("Each source must be a dict.")
+        name = s.get("name")
+        if not name or not isinstance(name, str):
+            die("Each source must have a string 'name'")
+        if name in seen:
+            die(f"Duplicate source name: {name}")
+        seen.add(name)
+        if not s.get("site_path"):
+            die(f"Source '{name}' missing site_path")
+        if not s.get("xlsx_path"):
+            die(f"Source '{name}' missing xlsx_path")
+
+def run_source(ctx: GraphCtx, site_hostname: str, table_name: str, source: dict) -> Tuple[pd.DataFrame, dict]:
+    name = source["name"]
+    site_path = source["site_path"]
+    xlsx_path = source["xlsx_path"]
+    recursive = bool(source.get("recursive", False))
+
     t0 = time.perf_counter()
+
+    try:
+        site_id = graph_get_site_id(ctx, site_hostname, site_path)
+        drive_id = graph_get_drive_id(ctx, site_id)
+        folder_item_id = try_get_item_id_by_path(ctx, drive_id, xlsx_path)
+        if not folder_item_id:
+            return pd.DataFrame(columns=["SKU", "Qty"]), {
+                "name": name, "status": "error", "reason": "Folder not found",
+                "site_path": site_path, "xlsx_path": xlsx_path, "runtime_s": round(time.perf_counter() - t0, 2)
+            }
+
+        items = graph_walk_files(ctx, drive_id, folder_item_id, recursive=recursive)
+        xlsx_items = [it for it in items if it.get("name", "").lower().endswith(".xlsx")]
+
+        agg: Dict[str, float] = {}
+        processed = 0
+        skipped = 0
+        used_fallback = 0
+
+        for it in xlsx_items:
+            item_id = it.get("id")
+            if not item_id:
+                skipped += 1
+                continue
+
+            b = request_bytes(ctx, f"{GRAPH}/drives/{drive_id}/items/{item_id}/content")
+            df, reason = read_sku_qty_from_xlsx_bytes(b, table_name)
+            if df is None:
+                skipped += 1
+                continue
+
+            if reason.endswith("(fallback)"):
+                used_fallback += 1
+
+            if not df.empty:
+                for sku, qty in zip(df["SKU"].tolist(), df["Qty"].tolist()):
+                    agg[sku] = agg.get(sku, 0.0) + float(qty)
+
+            processed += 1
+
+        if agg:
+            out = pd.DataFrame([{"SKU": sku, "Qty": agg[sku]} for sku in agg.keys()])
+            out = out.sort_values(["SKU"], kind="stable")
+            out["Qty"] = out["Qty"].apply(lambda x: int(x) if float(x).is_integer() else float(x))
+        else:
+            out = pd.DataFrame(columns=["SKU", "Qty"])
+
+        meta = {
+            "name": name,
+            "status": "ok",
+            "site_path": site_path,
+            "xlsx_path": xlsx_path,
+            "recursive": recursive,
+            "files_total": len(items),
+            "files_xlsx": len(xlsx_items),
+            "processed_xlsx": processed,
+            "skipped_xlsx": skipped,
+            "used_fallback": used_fallback,
+            "unique_skus": int(len(out)),
+            "runtime_s": round(time.perf_counter() - t0, 2),
+        }
+        return out, meta
+
+    except Exception as e:
+        return pd.DataFrame(columns=["SKU", "Qty"]), {
+            "name": name, "status": "error", "reason": f"Exception: {e}",
+            "site_path": site_path, "xlsx_path": xlsx_path, "runtime_s": round(time.perf_counter() - t0, 2)
+        }
+
+def save_outputs(df: pd.DataFrame, name: str) -> None:
+    out_dir = os.path.join("data", name)
+    ensure_dir(out_dir)
+    df.to_parquet(os.path.join(out_dir, f"{name}.parquet"), index=False)
+    df.to_csv(os.path.join(out_dir, f"{name}.csv"), index=False, encoding="utf-8")
+
+def save_manifest(summaries: List[dict]) -> None:
+    ensure_dir("data")
+    mf = pd.DataFrame(summaries)
+    # Stable column order (poka-yoke)
+    cols = [
+        "name", "status", "reason",
+        "site_path", "xlsx_path", "recursive",
+        "files_total", "files_xlsx", "processed_xlsx", "skipped_xlsx", "used_fallback",
+        "unique_skus", "runtime_s"
+    ]
+    for c in cols:
+        if c not in mf.columns:
+            mf[c] = None
+    mf = mf[cols]
+    mf.to_csv("data/_manifest.csv", index=False, encoding="utf-8")
+    with open("data/_manifest.json", "w", encoding="utf-8") as f:
+        json.dump(summaries, f, ensure_ascii=False, indent=2)
+
+def main() -> None:
+    t_all = time.perf_counter()
 
     tenant_id = env("TENANT_ID")
     client_id = env("CLIENT_ID")
     client_secret = env("CLIENT_SECRET")
+    config_path = env("CONFIG_PATH", default="sharepoint_sources.yml", required=False)
 
-    sp_site_hostname = env("SP_SITE_HOSTNAME")
-    sp_site_path = env("SP_SITE_PATH")
-    sp_xlsx_path_raw = env("SP_XLSX_PATH")
-    sp_table_name = env("SP_TABLE_NAME", default="Table1", required=False)
+    cfg = load_config(config_path)
+    validate_config(cfg)
 
-    recursive = env("SP_RECURSIVE", default="false", required=False).strip().lower() in ("1", "true", "yes", "y")
-    debug_tables = env("DEBUG_TABLES", default="false", required=False).strip().lower() in ("1", "true", "yes", "y")
+    site_hostname = cfg["site_hostname"]
+    table_name = cfg["table_name"]
 
-    out_dir = "data"
-    base_name = "sold_to_clients"
-
-    print(f"🟢 {now_ts()} Start. Recursive={recursive} DebugTables={debug_tables}")
-    print(f"   Site: {sp_site_hostname}{sp_site_path}")
-    print(f"   Folder (raw): {sp_xlsx_path_raw}")
-    print(f"   Folder (norm): {normalize_sp_path(sp_xlsx_path_raw)}")
-    print(f"   Table: {sp_table_name}")
+    print(f"🟢 {now_ts()} Start. Config={config_path}")
+    print(f"   Hostname={site_hostname} | Table={table_name}")
 
     token = get_app_token(tenant_id, client_id, client_secret)
     ctx = GraphCtx(token=token, session=new_session())
 
-    site_id = graph_get_site_id(ctx, sp_site_hostname, sp_site_path)
-    drive_id = graph_get_drive_id(ctx, site_id)
+    summaries: List[dict] = []
 
-    folder_item_id = try_get_item_id_by_path(ctx, drive_id, sp_xlsx_path_raw)
-    if not folder_item_id:
-        root_names = graph_list_root_children_names(ctx, drive_id, limit=60)
-        die(
-            "Folder not found by path (Graph 404 itemNotFound).\n"
-            f"Tried normalized path: {normalize_sp_path(sp_xlsx_path_raw)}\n"
-            "Top folders at drive root (for debugging):\n"
-            + "\n".join([f" - {n}" for n in root_names])
-        )
-
-    items = graph_walk_files(ctx, drive_id, folder_item_id, recursive=recursive)
-    xlsx_items = [it for it in items if it.get("name", "").lower().endswith(".xlsx")]
-
-    print(f"📦 Found: total_files={len(items)}, xlsx={len(xlsx_items)}")
-
-    agg: Dict[str, float] = {}
-    processed = 0
-    skipped = 0
-    used_fallback = 0
-
-    # For poka-yoke: limit verbose per-file logs
-    max_warns = 50
-    warns = 0
-
-    for it in xlsx_items:
-        name = it.get("name", "")
-        item_id = it.get("id")
-        if not item_id:
-            skipped += 1
+    for src in cfg["sources"]:
+        if not src.get("enabled", True):
             continue
 
-        content_url = f"{GRAPH}/drives/{drive_id}/items/{item_id}/content"
-        try:
-            b = request_bytes(ctx, content_url)
-        except Exception as e:
-            if warns < max_warns:
-                print(f"⚠️ Skip '{name}': download failed: {e}")
-                warns += 1
-            skipped += 1
-            continue
+        name = src["name"]
+        print(f"\n▶️ Source: {name}")
 
-        try:
-            df, reason = read_sku_qty_from_xlsx_bytes(b, sp_table_name, debug_tables=False)
-        except Exception as e:
-            if warns < max_warns:
-                print(f"⚠️ Skip '{name}': parse failed: {e}")
-                warns += 1
-            skipped += 1
-            continue
+        df, meta = run_source(ctx, site_hostname, table_name, src)
 
-        if df is None:
-            if warns < max_warns:
-                print(f"⚠️ Skip '{name}': {reason}")
-                warns += 1
-            skipped += 1
-            continue
+        if meta.get("status") == "ok":
+            save_outputs(df, name)
+            print(f"✅ {name}: xlsx={meta.get('files_xlsx')} processed={meta.get('processed_xlsx')} skipped={meta.get('skipped_xlsx')} skus={meta.get('unique_skus')} time={meta.get('runtime_s')}s")
+        else:
+            # still write empty outputs (downstream stability)
+            save_outputs(pd.DataFrame(columns=["SKU", "Qty"]), name)
+            print(f"❌ {name}: {meta.get('reason')} (empty outputs written)")
 
-        if reason.endswith("(fallback-scan)"):
-            used_fallback += 1
+        summaries.append(meta)
 
-        if not df.empty:
-            for sku, qty in zip(df["SKU"].tolist(), df["Qty"].tolist()):
-                agg[sku] = agg.get(sku, 0.0) + float(qty)
+    # Save manifest at the end
+    save_manifest(summaries)
 
-        processed += 1
+    total_s = round(time.perf_counter() - t_all, 2)
+    print("\n📌 Summary:")
+    for m in summaries:
+        print(f" - {m.get('name')}: {m.get('status')} | skus={m.get('unique_skus', '?')} | time={m.get('runtime_s', '?')}s")
 
-    # Poka-yoke: always produce a dataframe with correct schema
-    if agg:
-        result = pd.DataFrame([{"SKU": sku, "Qty": agg[sku]} for sku in agg.keys()])
-        result = result.sort_values(["SKU"], kind="stable")
-        result["Qty"] = result["Qty"].apply(lambda x: int(x) if float(x).is_integer() else float(x))
-    else:
-        result = pd.DataFrame(columns=["SKU", "Qty"])
-
-    os.makedirs(out_dir, exist_ok=True)
-
-    parquet_path = os.path.join(out_dir, f"{base_name}.parquet")
-    csv_path = os.path.join(out_dir, f"{base_name}.csv")
-    json_path = os.path.join(out_dir, f"{base_name}.json")
-
-    result.to_parquet(parquet_path, index=False)
-    result.to_csv(csv_path, index=False, encoding="utf-8")
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(result.to_dict(orient="records"), f, ensure_ascii=False, indent=2)
-
-    dur = time.perf_counter() - t0
-    print("✅ Done.")
-    print(f"🧾 Processed xlsx: {processed} | Skipped: {skipped} | Used fallback: {used_fallback}")
-    print(f"🧮 Unique SKUs: {len(result)}")
-    print(f"⏱️ Runtime: {dur:.2f} seconds")
-    print(f"📁 Outputs: {parquet_path}, {csv_path}, {json_path}")
-
-    # Optional deep debug for 1 file if you want: set DEBUG_TABLES=true and rerun
-    if debug_tables:
-        print("🔎 DEBUG_TABLES=true: rerun will print detected table names per sheet for troubleshooting.")
-
+    print(f"\n⏱️ Total runtime: {total_s}s")
+    print("📁 Outputs live under /data/<name>/ and manifest under /data/_manifest.(csv|json)")
 
 if __name__ == "__main__":
     main()
