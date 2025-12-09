@@ -257,6 +257,11 @@ def extract_df_from_range(ws, ref: str) -> Optional[pd.DataFrame]:
             q = float(qty) if qty is not None and str(qty).strip() != "" else 0.0
         except Exception:
             q = 0.0
+
+        # ✅ CHANGE: ignore negative numbers
+        if q < 0:
+            continue
+
         skus.append(str(sku).strip())
         qtys.append(q)
     return pd.DataFrame({"SKU": skus, "Qty": qtys})
@@ -304,6 +309,11 @@ def fallback_scan_headers(ws, max_rows: int = 5000, max_cols: int = 80) -> Optio
             q = float(qty) if qty is not None and str(qty).strip() != "" else 0.0
         except Exception:
             q = 0.0
+
+        # ✅ CHANGE: ignore negative numbers
+        if q < 0:
+            continue
+
         skus.append(str(sku).strip())
         qtys.append(q)
 
@@ -412,6 +422,7 @@ def run_source(ctx: GraphCtx, site_hostname: str, table_name: str, source: dict)
 
             if not df.empty:
                 for sku, qty in zip(df["SKU"].tolist(), df["Qty"].tolist()):
+                    # qty is already non-negative from extract_df_from_range / fallback_scan_headers
                     agg[sku] = agg.get(sku, 0.0) + float(qty)
 
             processed += 1
@@ -454,7 +465,6 @@ def save_outputs(df: pd.DataFrame, name: str) -> None:
 def save_manifest(summaries: List[dict]) -> None:
     ensure_dir("data")
     mf = pd.DataFrame(summaries)
-    # Stable column order (poka-yoke)
     cols = [
         "name", "status", "reason",
         "site_path", "xlsx_path", "recursive",
@@ -504,13 +514,11 @@ def main() -> None:
             save_outputs(df, name)
             print(f"✅ {name}: xlsx={meta.get('files_xlsx')} processed={meta.get('processed_xlsx')} skipped={meta.get('skipped_xlsx')} skus={meta.get('unique_skus')} time={meta.get('runtime_s')}s")
         else:
-            # still write empty outputs (downstream stability)
             save_outputs(pd.DataFrame(columns=["SKU", "Qty"]), name)
             print(f"❌ {name}: {meta.get('reason')} (empty outputs written)")
 
         summaries.append(meta)
 
-    # Save manifest at the end
     save_manifest(summaries)
 
     total_s = round(time.perf_counter() - t_all, 2)
