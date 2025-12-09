@@ -1,0 +1,41 @@
+name: Manual sync SKU_updated (aggregate)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  agg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build SKU_updated from existing /data inputs
+        run: |
+          python 3_sku_updated.py
+
+      - name: Commit outputs (only if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/SKU_updated/
+          if git diff --cached --quiet; then
+            echo "🟡 No changes in data/SKU_updated/ — skipping commit"
+          else
+            git commit -m "Update SKU_updated data"
+            git push
+            echo "✅ Changes pushed"
+          fi
