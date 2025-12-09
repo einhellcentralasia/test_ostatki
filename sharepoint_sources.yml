@@ -4,8 +4,68 @@ table_name: Table1
 
 # Each "source" becomes /data/<name>/<name>.(parquet|csv)
 sources:
-  - name: sold_to_clients
+  - name: sold_to_clients_table
     enabled: true
     site_path: /sites/Einhell
     xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Отгрузки клиентам_raw
+    recursive: false
+
+  - name: transit_booked_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Бронь в пути_raw
+    recursive: false
+
+    - name: booked_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Бронь клиентов_raw
+    recursive: false
+  
+  - name: demo_astana_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Демофонд Астана_raw
+    recursive: false
+    
+  - name: demo_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Демофонд_raw
+    recursive: false
+    
+  - name: service_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Сервис_raw
+    recursive: false
+        
+  - name: inbound_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Собственный товар на складе дистрибьютора_raw
+    recursive: false
+            
+  - name: sold_to_distr_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Товар дистрибьютора_raw
+    recursive: false
+                
+  - name: spark_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Товар на собственном складе_raw
+    recursive: false
+                    
+  - name: in_transit_table
+    enabled: true
+    site_path: /sites/Einhell
+    xlsx_path: /Shared Documents/General/Einhell_internal/Остатки, товары в пути/Товары в пути_raw
+    recursive: false
+                        
+  - name: tref_table
+    enabled: true
+    site_path: /sites/Einhell_common
+    xlsx_path: /Shared Documents/General/Маркетплейсы/Preorders/Preorders_raw
     recursive: false
