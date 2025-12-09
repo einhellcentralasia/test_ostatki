@@ -11,7 +11,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 720,
-    "runtime_s": 79.56
+    "runtime_s": 84.41
   },
   {
     "name": "transit_booked_table",
@@ -25,7 +25,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 178,
-    "runtime_s": 3.11
+    "runtime_s": 3.42
   },
   {
     "name": "booked_table",
@@ -39,7 +39,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 275,
-    "runtime_s": 4.64
+    "runtime_s": 6.71
   },
   {
     "name": "demo_astana_table",
@@ -53,7 +53,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 126,
-    "runtime_s": 4.68
+    "runtime_s": 5.24
   },
   {
     "name": "demo_table",
@@ -67,7 +67,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 409,
-    "runtime_s": 14.39
+    "runtime_s": 16.21
   },
   {
     "name": "service_table",
@@ -81,7 +81,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 122,
-    "runtime_s": 24.73
+    "runtime_s": 25.05
   },
   {
     "name": "inbound_table",
@@ -95,7 +95,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 856,
-    "runtime_s": 9.62
+    "runtime_s": 10.62
   },
   {
     "name": "sold_to_distr_table",
@@ -109,7 +109,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 747,
-    "runtime_s": 68.62
+    "runtime_s": 68.06
   },
   {
     "name": "spark_table",
@@ -123,7 +123,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 201,
-    "runtime_s": 12.49
+    "runtime_s": 12.72
   },
   {
     "name": "in_transit_table",
@@ -137,7 +137,21 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 190,
-    "runtime_s": 2.37
+    "runtime_s": 2.18
+  },
+  {
+    "name": "preorders_table",
+    "status": "ok",
+    "site_path": "/sites/Einhell",
+    "xlsx_path": "/Shared Documents/General/Einhell_internal/Остатки, товары в пути/Предзаказы_raw",
+    "recursive": false,
+    "files_total": 3,
+    "files_xlsx": 3,
+    "processed_xlsx": 3,
+    "skipped_xlsx": 0,
+    "used_fallback": 0,
+    "unique_skus": 143,
+    "runtime_s": 2.45
   },
   {
     "name": "tref_table",
@@ -151,6 +165,6 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 254,
-    "runtime_s": 136.64
+    "runtime_s": 145.15
   }
 ]
