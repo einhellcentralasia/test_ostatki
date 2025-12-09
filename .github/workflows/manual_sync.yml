@@ -23,13 +23,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Validate YAML config
+        run: |
+          python - << 'PY'
+          import yaml
+          with open("sharepoint_sources.yml", "r", encoding="utf-8") as f:
+              yaml.safe_load(f)
+          print("✅ YAML config is valid")
+          PY
+
       - name: Run sync (read-only SharePoint → repo data/)
         env:
           TENANT_ID: ${{ secrets.TENANT_ID }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-
-          # config-driven sources file in repo root
           CONFIG_PATH: "sharepoint_sources.yml"
         run: |
           python sync_sold_to_clients.py
