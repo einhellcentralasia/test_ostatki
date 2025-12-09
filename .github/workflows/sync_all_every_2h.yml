@@ -1,0 +1,80 @@
+name: Sync all (1_scrape → 2_sku_master → 3_sku_updated)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every 2 hours, Monday–Friday (GitHub cron is UTC)
+    - cron: "0 */2 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-all
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 1) Scrape SharePoint folders → /data/* (read-only)
+        env:
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          CONFIG_PATH: "sharepoint_sources.yml"
+        run: |
+          set -euo pipefail
+          python 1_scrape_sp_files.py
+
+      - name: 2) SKU master → /data/SKU (read-only)
+        env:
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          # Optional overrides (usually not needed):
+          # SP_SITE_HOSTNAME: "bavatools.sharepoint.com"
+          # SKU_SITE_PATH: "/sites/Einhell_common"
+          # SKU_XLSX_PATH: "/Shared Documents/General/_system_files/Bava_data.xlsx"
+          # SKU_TABLE_NAME: "list_stock_final_table_transit_table"
+          # SKU_OUTPUT_NAME: "SKU"
+        run: |
+          set -euo pipefail
+          python 2_sku_master.py
+
+      - name: 3) Build SKU_updated from parquet inputs → /data/SKU_updated
+        run: |
+          set -euo pipefail
+          python 3_sku_updated.py
+
+      - name: Commit outputs (only if changed)
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/
+
+          if git diff --cached --quiet; then
+            echo "🟡 No changes in data/ — skipping commit"
+          else
+            git commit -m "Update data (SharePoint + SKU + SKU_updated)"
+            git push
+            echo "✅ Changes pushed"
+          fi
