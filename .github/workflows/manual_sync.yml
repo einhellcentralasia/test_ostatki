@@ -1,4 +1,4 @@
-name: Manual sync sold_to_clients
+name: Manual sync SharePoint sources
 
 on:
   workflow_dispatch:
@@ -29,13 +29,8 @@ jobs:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
 
-          SP_SITE_HOSTNAME: ${{ secrets.SP_SITE_HOSTNAME }}
-          SP_SITE_PATH: ${{ secrets.SP_SITE_PATH }}
-          SP_XLSX_PATH: ${{ secrets.SP_XLSX_PATH }}
-          SP_TABLE_NAME: ${{ secrets.SP_TABLE_NAME }}
-
-          # optional
-          SP_RECURSIVE: "false"
+          # config-driven sources file in repo root
+          CONFIG_PATH: "sharepoint_sources.yml"
         run: |
           python sync_sold_to_clients.py
 
@@ -44,4 +39,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --cached --quiet || (git commit -m "Update sold_to_clients data" && git push)
+          git diff --cached --quiet || (git commit -m "Update SharePoint-derived data" && git push)
