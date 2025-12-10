@@ -67,7 +67,7 @@
     "Model": "Аккум. Ударный Шуруповерт Einhell TP-CD 18/50 Li-i BL-Solo (4513942)",
     "In_transit": 100,
     "Total_preorders": 0,
-    "Stock": 24,
+    "Stock": 23,
     "RSP": 47600,
     "ETA_Almaty": "24.11.2025"
   },
@@ -94,7 +94,7 @@
     "Model": "Аккум. Лобзик Einhell TC-JS 18 Li - Solo (4321209)",
     "In_transit": 35,
     "Total_preorders": 50,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 29200,
     "ETA_Almaty": "24.11.2025"
   },
@@ -364,7 +364,7 @@
     "Model": "Зарядное устройство в комплекте Einhell 18V 4,0Ah PXC Starter Kit 1 (4512042)",
     "In_transit": 364,
     "Total_preorders": 492,
-    "Stock": 198,
+    "Stock": 193,
     "RSP": 23400,
     "ETA_Almaty": "16.12.2025"
   },
@@ -508,7 +508,7 @@
     "Model": "Аккум. Углошлифмашина Einhell AXXIO 18/125 - Solo (4431140)",
     "In_transit": 150,
     "Total_preorders": 52,
-    "Stock": -6,
+    "Stock": -8,
     "RSP": 60200,
     "ETA_Almaty": "24.11.2025"
   },
@@ -553,7 +553,7 @@
     "Model": "Аккум. Углошлифмашина Einhell TP-AG 18/125 CE Q Li - Solo (4431155)",
     "In_transit": 100,
     "Total_preorders": 100,
-    "Stock": 0,
+    "Stock": -2,
     "RSP": 65800,
     "ETA_Almaty": "24.11.2025"
   },
@@ -634,7 +634,7 @@
     "Model": "Аккум. Шуруповерт Einhell TE-CD 18/40 Li BL - Solo (4513997)",
     "In_transit": 96,
     "Total_preorders": 96,
-    "Stock": 31,
+    "Stock": 30,
     "RSP": 39000,
     "ETA_Almaty": "24.11.2025"
   },
@@ -787,7 +787,7 @@
     "Model": "Аккум. Ударный Шуруповерт Einhell TP-CD 18/120 Li-i BL - Solo (4514310)",
     "In_transit": 100,
     "Total_preorders": 100,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 99900,
     "ETA_Almaty": "24.11.2025"
   },
@@ -832,7 +832,7 @@
     "Model": "Аккум. Ударный Шуруповерт Einhell TE-CD 18/2 Li-i +22 (1x2,5 Ah) (4514220)",
     "In_transit": 0,
     "Total_preorders": 0,
-    "Stock": 166,
+    "Stock": 155,
     "RSP": 69900,
     "ETA_Almaty": null
   },
@@ -913,7 +913,7 @@
     "Model": "Аккум. Угловой шуруповерт Einhell TE-AD 18 Li - Solo (4514290)",
     "In_transit": 50,
     "Total_preorders": 0,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 39900,
     "ETA_Almaty": "24.11.2025"
   },
@@ -976,7 +976,7 @@
     "Model": "Аккум. Циркулярная пила Einhell TE-CS 18/165-1 Li - Solo (4331207)",
     "In_transit": 0,
     "Total_preorders": 0,
-    "Stock": 5,
+    "Stock": 4,
     "RSP": 67900,
     "ETA_Almaty": null
   },
@@ -1201,7 +1201,7 @@
     "Model": "Аккум. Фонарь Einhell TC-CL 18/350 Li - Solo (4514175)",
     "In_transit": 32,
     "Total_preorders": 56,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 19900,
     "ETA_Almaty": "24.11.2025"
   },
@@ -1246,7 +1246,7 @@
     "Model": "Аккум. Клеевой пистолет Einhell TE-CG 18 Li - Solo (4522200)",
     "In_transit": 25,
     "Total_preorders": 0,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 25800,
     "ETA_Almaty": "24.11.2025"
   },
@@ -1579,7 +1579,7 @@
     "Model": "Аккум. Пылесос Einhell TE-VC 18 Li-Solo (2347120)",
     "In_transit": 20,
     "Total_preorders": 52,
-    "Stock": 6,
+    "Stock": 5,
     "RSP": 32900,
     "ETA_Almaty": "24.11.2025"
   },
@@ -2200,7 +2200,7 @@
     "Model": "Сетев. Углошлифмашина Einhell TE-AG 230 (4430870)",
     "In_transit": -30,
     "Total_preorders": 50,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 78200,
     "ETA_Almaty": null
   },
@@ -2488,7 +2488,7 @@
     "Model": "Аккум. Шуруповерт Einhell TC-SD 3,6 Li (4513442)",
     "In_transit": 0,
     "Total_preorders": 0,
-    "Stock": 245,
+    "Stock": 235,
     "RSP": 14900,
     "ETA_Almaty": null
   },
@@ -3613,7 +3613,7 @@
     "Model": "Кейс Einhell E-Case M (4540021)",
     "In_transit": 25,
     "Total_preorders": 0,
-    "Stock": -4,
+    "Stock": -5,
     "RSP": 39000,
     "ETA_Almaty": "24.11.2025"
   },
@@ -5845,7 +5845,7 @@
     "Model": "Сетев. Пылесос Einhell TE-VC 2025 SACL (2342460)",
     "In_transit": 0,
     "Total_preorders": 0,
-    "Stock": 52,
+    "Stock": 51,
     "RSP": 115600,
     "ETA_Almaty": null
   },
@@ -8239,7 +8239,7 @@
     "Model": "Аккум. Насос Einhell CE-AP 18 Li-Solo (2070110)",
     "In_transit": 24,
     "Total_preorders": 0,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 27200,
     "ETA_Almaty": "24.11.2025"
   },
@@ -10561,7 +10561,7 @@
     "Model": "Аккум. Винтоверт Einhell TP-CI 18/220 Li BL - Solo (4510085)",
     "In_transit": 48,
     "Total_preorders": 56,
-    "Stock": -2,
+    "Stock": -3,
     "RSP": 66200,
     "ETA_Almaty": "24.11.2025"
   },
@@ -10723,7 +10723,7 @@
     "Model": "Аккум. Штроборез Einhell TP-MA 36/30 Li BL - Solo (4350800)",
     "In_transit": 14,
     "Total_preorders": 0,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 178900,
     "ETA_Almaty": "24.11.2025"
   },
@@ -10768,7 +10768,7 @@
     "Model": "USB-адаптер Einhell TC-CP 18 Li USB A/C-Solo (4514148)",
     "In_transit": 60,
     "Total_preorders": 0,
-    "Stock": 58,
+    "Stock": 56,
     "RSP": 13100,
     "ETA_Almaty": "24.11.2025"
   },
@@ -10777,7 +10777,7 @@
     "Model": "Аккум. Фонарь Einhell TE-CL 18/1000 S Li - Solo (4514180)",
     "In_transit": 24,
     "Total_preorders": 0,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 36700,
     "ETA_Almaty": "24.11.2025"
   },
@@ -11092,7 +11092,7 @@
     "Model": "Аккум. Отрезная машина Einhell TP-CO 18/76-C Li BL - Solo (4432000)",
     "In_transit": 30,
     "Total_preorders": 0,
-    "Stock": 0,
+    "Stock": -1,
     "RSP": 65000,
     "ETA_Almaty": "24.11.2025"
   },
