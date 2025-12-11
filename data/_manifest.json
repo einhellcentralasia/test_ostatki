@@ -11,7 +11,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 730,
-    "runtime_s": 75.22
+    "runtime_s": 76.63
   },
   {
     "name": "transit_booked_table",
@@ -25,7 +25,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 178,
-    "runtime_s": 3.32
+    "runtime_s": 2.96
   },
   {
     "name": "booked_table",
@@ -39,7 +39,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 275,
-    "runtime_s": 4.46
+    "runtime_s": 4.52
   },
   {
     "name": "demo_astana_table",
@@ -53,7 +53,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 126,
-    "runtime_s": 4.5
+    "runtime_s": 4.49
   },
   {
     "name": "demo_table",
@@ -67,7 +67,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 409,
-    "runtime_s": 13.31
+    "runtime_s": 13.3
   },
   {
     "name": "service_table",
@@ -95,7 +95,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 856,
-    "runtime_s": 8.91
+    "runtime_s": 9.27
   },
   {
     "name": "sold_to_distr_table",
@@ -109,7 +109,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 747,
-    "runtime_s": 59.04
+    "runtime_s": 60.83
   },
   {
     "name": "spark_table",
@@ -123,7 +123,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 201,
-    "runtime_s": 10.7
+    "runtime_s": 11.15
   },
   {
     "name": "in_transit_table",
@@ -151,7 +151,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 143,
-    "runtime_s": 2.24
+    "runtime_s": 1.98
   },
   {
     "name": "tref_table",
@@ -165,6 +165,6 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 259,
-    "runtime_s": 132.2
+    "runtime_s": 134.65
   }
 ]
