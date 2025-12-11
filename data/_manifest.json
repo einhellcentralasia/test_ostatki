@@ -11,7 +11,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 730,
-    "runtime_s": 82.21
+    "runtime_s": 67.72
   },
   {
     "name": "transit_booked_table",
@@ -25,7 +25,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 178,
-    "runtime_s": 3.14
+    "runtime_s": 2.61
   },
   {
     "name": "booked_table",
@@ -39,7 +39,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 275,
-    "runtime_s": 4.97
+    "runtime_s": 3.95
   },
   {
     "name": "demo_astana_table",
@@ -53,7 +53,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 126,
-    "runtime_s": 4.79
+    "runtime_s": 4.17
   },
   {
     "name": "demo_table",
@@ -67,7 +67,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 409,
-    "runtime_s": 14.47
+    "runtime_s": 11.82
   },
   {
     "name": "service_table",
@@ -81,7 +81,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 123,
-    "runtime_s": 23.2
+    "runtime_s": 19.52
   },
   {
     "name": "inbound_table",
@@ -95,7 +95,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 856,
-    "runtime_s": 10.98
+    "runtime_s": 8.32
   },
   {
     "name": "sold_to_distr_table",
@@ -109,7 +109,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 747,
-    "runtime_s": 63.69
+    "runtime_s": 52.71
   },
   {
     "name": "spark_table",
@@ -123,7 +123,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 201,
-    "runtime_s": 11.67
+    "runtime_s": 10.18
   },
   {
     "name": "in_transit_table",
@@ -137,7 +137,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 190,
-    "runtime_s": 1.99
+    "runtime_s": 1.71
   },
   {
     "name": "preorders_table",
@@ -151,7 +151,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 143,
-    "runtime_s": 2.29
+    "runtime_s": 1.76
   },
   {
     "name": "tref_table",
@@ -165,6 +165,6 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 259,
-    "runtime_s": 139.29
+    "runtime_s": 125.42
   }
 ]
