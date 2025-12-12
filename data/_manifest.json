@@ -11,7 +11,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 730,
-    "runtime_s": 102.48
+    "runtime_s": 78.8
   },
   {
     "name": "transit_booked_table",
@@ -25,7 +25,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 178,
-    "runtime_s": 4.03
+    "runtime_s": 3.06
   },
   {
     "name": "booked_table",
@@ -39,7 +39,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 275,
-    "runtime_s": 5.9
+    "runtime_s": 4.73
   },
   {
     "name": "demo_astana_table",
@@ -53,7 +53,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 126,
-    "runtime_s": 6.01
+    "runtime_s": 4.55
   },
   {
     "name": "demo_table",
@@ -61,13 +61,13 @@
     "site_path": "/sites/Einhell",
     "xlsx_path": "/Shared Documents/General/Einhell_internal/Остатки, товары в пути/Демофонд_raw",
     "recursive": false,
-    "files_total": 34,
-    "files_xlsx": 34,
-    "processed_xlsx": 34,
+    "files_total": 35,
+    "files_xlsx": 35,
+    "processed_xlsx": 35,
     "skipped_xlsx": 0,
     "used_fallback": 0,
-    "unique_skus": 409,
-    "runtime_s": 17.54
+    "unique_skus": 420,
+    "runtime_s": 13.55
   },
   {
     "name": "service_table",
@@ -75,13 +75,13 @@
     "site_path": "/sites/Einhell",
     "xlsx_path": "/Shared Documents/General/Einhell_internal/Остатки, товары в пути/Сервис_raw",
     "recursive": false,
-    "files_total": 55,
-    "files_xlsx": 55,
-    "processed_xlsx": 55,
+    "files_total": 56,
+    "files_xlsx": 56,
+    "processed_xlsx": 56,
     "skipped_xlsx": 0,
     "used_fallback": 0,
-    "unique_skus": 123,
-    "runtime_s": 27.97
+    "unique_skus": 124,
+    "runtime_s": 22.4
   },
   {
     "name": "inbound_table",
@@ -95,7 +95,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 889,
-    "runtime_s": 12.56
+    "runtime_s": 10.81
   },
   {
     "name": "sold_to_distr_table",
@@ -109,7 +109,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 747,
-    "runtime_s": 79.84
+    "runtime_s": 61.43
   },
   {
     "name": "spark_table",
@@ -123,7 +123,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 201,
-    "runtime_s": 14.71
+    "runtime_s": 11.0
   },
   {
     "name": "in_transit_table",
@@ -137,7 +137,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 54,
-    "runtime_s": 2.03
+    "runtime_s": 1.86
   },
   {
     "name": "preorders_table",
@@ -151,7 +151,7 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 143,
-    "runtime_s": 2.65
+    "runtime_s": 2.01
   },
   {
     "name": "tref_table",
@@ -165,6 +165,6 @@
     "skipped_xlsx": 0,
     "used_fallback": 0,
     "unique_skus": 261,
-    "runtime_s": 167.64
+    "runtime_s": 139.66
   }
 ]
